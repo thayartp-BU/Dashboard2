@@ -1,0 +1,6 @@
+{
+  "name": "ระบบประเมินความพึงพอใจการอบรม & Live Dashboard",
+  "description": "เว็บแอปพลิเคชันแบบประเมินความพึงพอใจหลังการอบรมสำหรับมือถือ พร้อมหน้า Live Projector Dashboard แสดงผลเรียลไทม์ สแกน QR Code และดาวน์โหลด CSV",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

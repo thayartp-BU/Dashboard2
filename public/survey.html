@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>แบบประเมินความพึงพอใจการอบรม</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body { font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12 antialiased">
+
+  <header class="bg-indigo-600 text-white px-5 py-6 shadow-md">
+    <div class="max-w-md mx-auto">
+      <div class="flex items-center gap-2 text-indigo-200 text-xs font-medium uppercase tracking-wider mb-1">
+        <span>แบบสอบถามประเมินผล</span>
+        <span>•</span>
+        <span>ไม่ต้องระบุชื่อ</span>
+      </div>
+      <h1 class="text-xl font-bold leading-tight">แบบประเมินความพึงพอใจการอบรม</h1>
+      <p class="text-indigo-100 text-sm mt-1">โปรดให้คะแนนตามความพึงพอใจของท่าน เพื่อนำไปพัฒนาการจัดอบรมในครั้งต่อไป</p>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 mt-5">
+
+    <div id="already-submitted-card" class="hidden bg-white rounded-2xl p-6 shadow-sm border border-slate-200 text-center">
+      <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+        ✓
+      </div>
+      <h2 class="text-lg font-bold text-slate-800">ท่านได้ส่งแบบประเมินแล้ว</h2>
+      <p class="text-slate-600 text-sm mt-2">ขอขอบพระคุณสำหรับข้อเสนอแนะและคะแนนความพึงพอใจที่มีคุณค่าต่อทีมงาน</p>
+      
+      <div class="mt-6 pt-5 border-t border-slate-100">
+        <button id="btn-re-vote" class="text-xs text-indigo-600 hover:text-indigo-800 underline">
+          ต้องการทำแบบสอบถามใหม่อีกครั้ง (สำหรับทดสอบ)
+        </button>
+      </div>
+    </div>
+
+    <form id="survey-form" class="space-y-5">
+      <div id="questions-list" class="space-y-4"></div>
+
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <label for="suggestion-input" class="block font-semibold text-slate-900 text-sm mb-1">
+          ข้อเสนอแนะเพิ่มเติม / สิ่งที่ประทับใจ <span class="text-slate-400 font-normal text-xs">(ไม่บังคับ)</span>
+        </label>
+        <p class="text-xs text-slate-500 mb-3">คำแนะนำของท่านจะช่วยให้การจัดอบรมในครั้งหน้าดียิ่งขึ้น</p>
+        <textarea id="suggestion-input" rows="3" maxlength="500" placeholder="พิมพ์ความคิดเห็น ข้อเสนอแนะ หรือหัวข้อที่ต้องการเรียนรู้เพิ่มเติม..." class="w-full text-sm rounded-xl border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"></textarea>
+      </div>
+
+      <div class="pt-2">
+        <button type="submit" id="submit-btn" class="w-full h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-semibold rounded-2xl shadow-lg shadow-indigo-600/20 text-base flex items-center justify-center transition-all cursor-pointer">
+          ส่งแบบประเมินความพึงพอใจ
+        </button>
+        <p class="text-center text-xs text-slate-400 mt-2">คะแนนจะถูกส่งเข้าสู่ระบบทันทีแบบ Real-time</p>
+      </div>
+    </form>
+
+    <div id="success-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl animate-bounce-in">
+        <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl font-bold">
+          ✓
+        </div>
+        <h3 class="text-xl font-bold text-slate-900">บันทึกข้อมูลสำเร็จ!</h3>
+        <p class="text-sm text-slate-600 mt-2">ขอขอบพระคุณท่านผู้เข้าร่วมอบรมทุกท่าน ข้อมูลของท่านได้แสดงบนจอ Dashboard เรียบร้อยแล้ว</p>
+        <button id="modal-close-btn" class="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl transition-all">
+          เสร็จสิ้น
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    let db = null;
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+      }
+    } catch(err) {
+      console.warn("Firebase running in local sync mode", err);
+    }
+
+    const questions = [
+      { id: 1, title: "1. ความชัดเจนและประโยชน์ของเนื้อหาหลักสูตร", desc: "เนื้อหาตรงตามวัตถุประสงค์ เรียบเรียงเข้าใจง่าย" },
+      { id: 2, title: "2. ความเชี่ยวชาญและการถ่ายทอดของวิทยากร", desc: "อธิบายชัดเจน มีเทคนิคการสอน และตอบคำถามได้ดี" },
+      { id: 3, title: "3. การนำความรู้และทักษะไปประยุกต์ใช้จริง", desc: "สามารถนำเครื่องมือหรือเทคนิคไปใช้พัฒนางานได้ทันที" },
+      { id: 4, title: "4. ความเหมาะสมของเวลาและสื่อสิ่งอำนวยความสะดวก", desc: "การจัดสรรเวลา อุปกรณ์ สถานที่ หรือระบบออนไลน์มีความพร้อม" },
+      { id: 5, title: "5. ความพึงพอใจในภาพรวมของการอบรมครั้งนี้", desc: "ความประทับใจโดยรวมและยินดีแนะนำให้ผู้อื่นเข้าร่วม" }
+    ];
+
+    const answers = { 1: null, 2: null, 3: null, 4: null, 5: null };
+
+    const questionsContainer = document.getElementById('questions-list');
+    questions.forEach(q => {
+      const card = document.createElement('div');
+      card.className = "bg-white rounded-2xl p-5 shadow-sm border border-slate-200";
+      card.id = `q-card-${q.id}`;
+      card.innerHTML = `
+        <div class="mb-3">
+          <h2 class="font-bold text-slate-900 text-sm md:text-base leading-snug">${q.title}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">${q.desc}</p>
+        </div>
+        <div class="grid grid-cols-5 gap-2 pt-1" id="btn-group-${q.id}">
+          ${[1, 2, 3, 4, 5].map(score => `
+            <button type="button" data-question="${q.id}" data-score="${score}" class="score-btn h-13 py-2 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 font-bold transition-all active:scale-95 cursor-pointer">
+              <span class="text-base md:text-lg leading-none font-bold">${score}</span>
+              <span class="text-[9px] font-normal text-slate-500 mt-1">
+                ${score === 1 ? 'น้อยสุด' : score === 2 ? 'น้อย' : score === 3 ? 'ปานกลาง' : score === 4 ? 'มาก' : 'มากที่สุด'}
+              </span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      questionsContainer.appendChild(card);
+    });
+
+    document.querySelectorAll('.score-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const qId = parseInt(this.getAttribute('data-question'));
+        const score = parseInt(this.getAttribute('data-score'));
+        answers[qId] = score;
+
+        const group = document.getElementById(`btn-group-${qId}`);
+        group.querySelectorAll('.score-btn').forEach(b => {
+          b.className = "score-btn h-13 py-2 flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 font-bold transition-all active:scale-95 cursor-pointer";
+        });
+
+        this.className = "score-btn h-13 py-2 flex flex-col items-center justify-center rounded-xl border-2 border-indigo-600 bg-indigo-600 text-white font-bold transition-all shadow-md shadow-indigo-600/30 scale-[1.03] cursor-pointer";
+        this.querySelector('span:last-child').className = "text-[9px] font-medium text-indigo-100 mt-1";
+
+        document.getElementById(`q-card-${qId}`).classList.remove('border-rose-400', 'bg-rose-50/20');
+      });
+    });
+
+    function checkSubmitted() {
+      if (localStorage.getItem('workshop_has_submitted') === 'true') {
+        document.getElementById('already-submitted-card').classList.remove('hidden');
+        document.getElementById('survey-form').classList.add('hidden');
+      } else {
+        document.getElementById('already-submitted-card').classList.add('hidden');
+        document.getElementById('survey-form').classList.remove('hidden');
+      }
+    }
+    checkSubmitted();
+
+    document.getElementById('btn-re-vote').addEventListener('click', () => {
+      localStorage.removeItem('workshop_has_submitted');
+      checkSubmitted();
+    });
+
+    document.getElementById('survey-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      let missing = [];
+      for (let i = 1; i <= 5; i++) {
+        if (!answers[i]) {
+          missing.push(i);
+          document.getElementById(`q-card-${i}`).classList.add('border-rose-400', 'bg-rose-50/20');
+        }
+      }
+
+      if (missing.length > 0) {
+        const firstMissing = document.getElementById(`q-card-${missing[0]}`);
+        firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert(`กรุณาตอบคำถามให้ครบทุกข้อ (ยังเหลือข้อที่: ${missing.join(', ')})`);
+        return;
+      }
+
+      const scoresArray = [answers[1], answers[2], answers[3], answers[4], answers[5]];
+      const average = Number((scoresArray.reduce((a, b) => a + b, 0) / 5).toFixed(2));
+      const suggestion = document.getElementById('suggestion-input').value.trim();
+
+      const newResponse = {
+        timestamp: Date.now(),
+        scores: scoresArray,
+        average: average,
+        suggestion: suggestion || null,
+        deviceId: 'device_' + Math.random().toString(36).substring(2, 9)
+      };
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'กำลังส่งข้อมูล...';
+
+      try {
+        if (db) {
+          await db.ref('responses').push(newResponse);
+        } else {
+          const localList = JSON.parse(localStorage.getItem('workshop_survey_responses_v1') || '[]');
+          localList.unshift(newResponse);
+          localStorage.setItem('workshop_survey_responses_v1', JSON.stringify(localList));
+          if ('BroadcastChannel' in window) {
+            new BroadcastChannel('workshop_survey_broadcast').postMessage({ type: 'SYNC' });
+          }
+        }
+
+        localStorage.setItem('workshop_has_submitted', 'true');
+
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+        }
+
+        document.getElementById('success-modal').classList.remove('hidden');
+      } catch (err) {
+        console.error('Error submitting:', err);
+        alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'ส่งแบบประเมินความพึงพอใจ';
+      }
+    });
+
+    document.getElementById('modal-close-btn').addEventListener('click', () => {
+      document.getElementById('success-modal').classList.add('hidden');
+      checkSubmitted();
+    });
+  </script>
+</body>
+</html>
